@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "716112968839",
+    "project_id": "falix-71b88",
+    "storage_bucket": "falix-71b88.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:716112968839:android:1fd3cc04fd9611836f4c22",
+        "android_client_info": {
+          "package_name": "com.falix.ai.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "716112968839-osucrd9igoo6r6mb2h74se4s0r9ncl7o.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.falix.ai.app",
+            "certificate_hash": "6011b4fac7f255233c4ccd5debd5ab541c50315b"
+          }
+        },
+        {
+          "client_id": "716112968839-p63ashgnbn0i0i1a0d8fk07hltmbjcef.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCdlqmp_yeD-BGU7-GTBluKYqcz3GoHVTM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "716112968839-p63ashgnbn0i0i1a0d8fk07hltmbjcef.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
