@@ -96,7 +96,7 @@ Future<void> main() async {
       );
     }
 
-    await MobileAds.instance.initialize();
+   // await MobileAds.instance.initialize();
     await _initNotifications();
   } catch (e, st) {
     debugPrint('Init error: $e');
@@ -125,7 +125,6 @@ class _FalixAppState extends State<FalixApp> with WidgetsBindingObserver {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     LiveAnalyticsService.instance.markOnline();
-    _appOpenAdManager.loadAd();
     _checkForceUpdate();
   }
 
@@ -161,7 +160,6 @@ class _FalixAppState extends State<FalixApp> with WidgetsBindingObserver {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Future.delayed(const Duration(milliseconds: 1200), () {
         if (!mounted || _forceUpdateRequired) return;
-        _appOpenAdManager.showAdIfAvailable();
       });
     });
   }
@@ -171,7 +169,6 @@ class _FalixAppState extends State<FalixApp> with WidgetsBindingObserver {
     if (state == AppLifecycleState.resumed) {
       LiveAnalyticsService.instance.markOnline();
       if (!_forceUpdateRequired) {
-        _appOpenAdManager.showAdIfAvailable();
       }
     } else if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.detached ||
