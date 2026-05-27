@@ -103,10 +103,11 @@ Future<void> main() async {
   }
 
   try {
-    // iOS TestFlight crash riskini azaltmak için başlangıçta sadece Android'de açıyoruz.
-    // iOS reklam/bildirim ayarları stabil hale gelince ayrıca aktif edilir.
+    // Reklam SDK'sı hem Android hem iOS için başlatılır.
+    // Bildirim kurulumu şimdilik sadece Android'de tutulur.
+    await MobileAds.instance.initialize();
+
     if (Platform.isAndroid && firebaseReady) {
-      await MobileAds.instance.initialize();
       await _initNotifications();
     }
   } catch (e, st) {
