@@ -86,9 +86,36 @@ Future<void> _initNotifications() async {
   });
 }
 
+bool firebaseReady = false;
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const FalixApp());}
+
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    firebaseReady = true;
+  } catch (e, st) {
+    firebaseReady = false;
+    debugPrint('Firebase init error: $e');
+    debugPrintStack(stackTrace: st);
+  }
+
+  try {
+    // iOS TestFlight crash riskini azaltmak için başlangıçta sadece Android'de açıyoruz.
+    // iOS reklam/bildirim ayarları stabil hale gelince ayrıca aktif edilir.
+    if (Platform.isAndroid && firebaseReady) {
+      await MobileAds.instance.initialize();
+      await _initNotifications();
+    }
+  } catch (e, st) {
+    debugPrint('Optional startup init error: $e');
+    debugPrintStack(stackTrace: st);
+  }
+
+  runApp(const FalixApp());
+}
 
 class FalixApp extends StatefulWidget {
   const FalixApp({super.key});
@@ -108,11 +135,35 @@ class _FalixAppState extends State<FalixApp> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    LiveAnalyticsService.instance.markOnline();
-    _checkForceUpdate();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _safeStartup();
+    });
+  }
+
+  Future<void> _safeStartup() async {
+    if (firebaseReady) {
+      try {
+        await LiveAnalyticsService.instance.markOnline();
+      } catch (e, st) {
+        debugPrint('LiveAnalytics markOnline error: $e');
+        debugPrintStack(stackTrace: st);
+      }
+    }
+
+    await _checkForceUpdate();
   }
 
   Future<void> _checkForceUpdate() async {
+    if (!firebaseReady) {
+      if (!mounted) return;
+      setState(() {
+        _checkingForceUpdate = false;
+        _forceUpdateRequired = false;
+      });
+      return;
+    }
+
     try {
       final config = await ForceUpdateService().getConfig();
       if (!mounted) return;
@@ -150,14 +201,24 @@ class _FalixAppState extends State<FalixApp> with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (!firebaseReady) return;
+
     if (state == AppLifecycleState.resumed) {
-      LiveAnalyticsService.instance.markOnline();
-      if (!_forceUpdateRequired) {
+      try {
+        LiveAnalyticsService.instance.markOnline();
+      } catch (e, st) {
+        debugPrint('markOnline lifecycle error: $e');
+        debugPrintStack(stackTrace: st);
       }
     } else if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.detached ||
         state == AppLifecycleState.inactive) {
-      LiveAnalyticsService.instance.markOffline();
+      try {
+        LiveAnalyticsService.instance.markOffline();
+      } catch (e, st) {
+        debugPrint('markOffline lifecycle error: $e');
+        debugPrintStack(stackTrace: st);
+      }
     }
   }
 
@@ -212,20 +273,21 @@ class AppOpenAdManager {
   bool _isShowingAd = false;
   bool _isLoadingAd = false;
 
-  String get _adUnitId {
+  String? get _adUnitId {
     if (Platform.isAndroid) return _androidAdUnitId;
-    return _androidAdUnitId;
+    return null;
   }
 
   bool get _isAdAvailable => _appOpenAd != null;
 
   void loadAd() {
-    if (_isLoadingAd || _isAdAvailable) return;
+    final adUnitId = _adUnitId;
+    if (adUnitId == null || _isLoadingAd || _isAdAvailable) return;
 
     _isLoadingAd = true;
 
     AppOpenAd.load(
-      adUnitId: _adUnitId,
+      adUnitId: adUnitId,
       request: const AdRequest(),
       adLoadCallback: AppOpenAdLoadCallback(
         onAdLoaded: (ad) {
@@ -467,6 +529,10 @@ class AuthWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (!firebaseReady) {
+      return const StartupErrorPage();
+    }
+
     return StreamBuilder<User?>(
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (context, snapshot) {
@@ -500,6 +566,42 @@ class AuthWrapper extends StatelessWidget {
           },
         );
       },
+    );
+  }
+}
+
+class StartupErrorPage extends StatelessWidget {
+  const StartupErrorPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFF140A26),
+            Color(0xFF2A1244),
+            Color(0xFF090B18),
+          ],
+        ),
+      ),
+      child: const Scaffold(
+        backgroundColor: Colors.transparent,
+        body: SafeArea(
+          child: Center(
+            child: Padding(
+              padding: EdgeInsets.all(24),
+              child: Text(
+                'Falix başlatılamadı. Lütfen uygulamayı kapatıp tekrar açın.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.white, fontSize: 16),
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
