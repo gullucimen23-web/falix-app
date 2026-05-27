@@ -55,5 +55,20 @@
 	<string>Reklamları kişiselleştirmek ve daha iyi reklam deneyimi sunmak için izin gerekiyor.</string>
 	<key>GADApplicationIdentifier</key>
 	<string>ca-app-pub-6519845131494268~4392263072</string>
+
+	<key>GIDClientID</key>
+	<string>716112968839-1d6evuvorvjpqojbuobmgndr6tnnrbqu.apps.googleusercontent.com</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.716112968839-1d6evuvorvjpqojbuobmgndr6tnnrbqu</string>
+			</array>
+		</dict>
+	</array>
+
 </dict>
 </plist>
