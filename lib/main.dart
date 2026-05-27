@@ -88,23 +88,7 @@ Future<void> _initNotifications() async {
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  try {
-    if (Firebase.apps.isEmpty) {
-      await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform,
-      );
-    }
-
-   // await MobileAds.instance.initialize();
-    await _initNotifications();
-  } catch (e, st) {
-    debugPrint('Init error: $e');
-    debugPrintStack(stackTrace: st);
-  }
-
-  runApp(const FalixApp());
-}
+  runApp(const FalixApp());}
 
 class FalixApp extends StatefulWidget {
   const FalixApp({super.key});
