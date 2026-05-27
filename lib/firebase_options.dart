@@ -1,4 +1,3 @@
-```dart
 // File generated manually for Android + iOS
 // ignore_for_file: type=lint
 
