@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:io' show Platform;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 
 class IAPService {
@@ -26,31 +28,67 @@ class IAPService {
     premiumYearly,
   };
 
+  String? lastStoreError;
+  Set<String> lastNotFoundProductIds = const {};
+
+  String get storeName {
+    if (Platform.isIOS) return 'App Store';
+    if (Platform.isAndroid) return 'Google Play';
+    return 'mağaza';
+  }
+
   Future<bool> isAvailable() async {
-    return _iap.isAvailable();
+    try {
+      return await _iap.isAvailable();
+    } catch (e, st) {
+      lastStoreError = e.toString();
+      debugPrint('IAP isAvailable error: $e');
+      debugPrintStack(stackTrace: st);
+      return false;
+    }
   }
 
   Future<List<ProductDetails>> loadProducts() async {
-    final available = await _iap.isAvailable();
-    if (!available) return [];
+    lastStoreError = null;
+    lastNotFoundProductIds = const {};
 
-    final response = await _iap.queryProductDetails(productIds);
-
-    if (response.error != null) {
-      throw Exception(response.error!.message);
+    final available = await isAvailable();
+    if (!available) {
+      lastStoreError = '$storeName şu anda kullanılamıyor.';
+      return [];
     }
 
-    final products = response.productDetails.toList();
+    try {
+      final response = await _iap.queryProductDetails(productIds);
 
-    products.sort((a, b) {
-      final aPriority = _sortPriority(a.id);
-      final bPriority = _sortPriority(b.id);
+      lastNotFoundProductIds = response.notFoundIDs.toSet();
 
-      if (aPriority != bPriority) return aPriority.compareTo(bPriority);
-      return a.rawPrice.compareTo(b.rawPrice);
-    });
+      if (response.error != null) {
+        lastStoreError = response.error!.message;
+        debugPrint('IAP queryProductDetails error: ${response.error}');
+      }
 
-    return products;
+      if (response.notFoundIDs.isNotEmpty) {
+        debugPrint('IAP not found products: ${response.notFoundIDs.join(', ')}');
+      }
+
+      final products = response.productDetails.toList();
+
+      products.sort((a, b) {
+        final aPriority = _sortPriority(a.id);
+        final bPriority = _sortPriority(b.id);
+
+        if (aPriority != bPriority) return aPriority.compareTo(bPriority);
+        return a.rawPrice.compareTo(b.rawPrice);
+      });
+
+      return products;
+    } catch (e, st) {
+      lastStoreError = e.toString();
+      debugPrint('IAP loadProducts exception: $e');
+      debugPrintStack(stackTrace: st);
+      return [];
+    }
   }
 
   void listenPurchases({
@@ -69,12 +107,15 @@ class IAPService {
               uid: uid,
               onSuccess: onSuccess,
             );
-          } catch (e) {
+          } catch (e, st) {
+            debugPrint('IAP handle purchase error: $e');
+            debugPrintStack(stackTrace: st);
             onError?.call(e.toString());
           }
         }
       },
       onError: (e) {
+        debugPrint('IAP purchase stream error: $e');
         onError?.call(e.toString());
       },
       cancelOnError: false,
@@ -85,7 +126,7 @@ class IAPService {
     final purchaseParam = PurchaseParam(productDetails: product);
     await _iap.buyConsumable(
       purchaseParam: purchaseParam,
-      autoConsume: true,
+      autoConsume: Platform.isAndroid,
     );
   }
 
@@ -94,6 +135,10 @@ class IAPService {
     await _iap.buyNonConsumable(
       purchaseParam: purchaseParam,
     );
+  }
+
+  Future<void> restorePurchases() async {
+    await _iap.restorePurchases();
   }
 
   Future<void> _handlePurchase({
@@ -177,11 +222,14 @@ class IAPService {
     final premiumHistoryRef = userRef.collection('premium_history').doc();
 
     await premiumHistoryRef.set({
-      'type': 'premium_subscription_purchase',
+      'type': purchase.status == PurchaseStatus.restored
+          ? 'premium_subscription_restore'
+          : 'premium_subscription_purchase',
       'productId': purchase.productID,
       'purchaseId': purchase.purchaseID,
       'transactionDate': purchase.transactionDate,
       'status': purchase.status.name,
+      'platform': Platform.isIOS ? 'ios' : Platform.isAndroid ? 'android' : 'unknown',
       'createdAt': FieldValue.serverTimestamp(),
     });
   }
@@ -234,7 +282,9 @@ class IAPService {
       }
 
       tx.set(historyRef, {
-        'type': 'premium_coin_purchase',
+        'type': purchase.status == PurchaseStatus.restored
+            ? 'premium_coin_restore'
+            : 'premium_coin_purchase',
         'amount': premiumCoinAmount,
         'balanceAfter': newPremiumCoin,
         'createdAt': FieldValue.serverTimestamp(),
@@ -243,6 +293,7 @@ class IAPService {
           'purchaseId': purchase.purchaseID,
           'transactionDate': purchase.transactionDate,
           'status': purchase.status.name,
+          'platform': Platform.isIOS ? 'ios' : Platform.isAndroid ? 'android' : 'unknown',
         },
       });
 
@@ -252,6 +303,7 @@ class IAPService {
         'transactionDate': purchase.transactionDate,
         'status': purchase.status.name,
         'premiumCoinGranted': premiumCoinAmount,
+        'platform': Platform.isIOS ? 'ios' : Platform.isAndroid ? 'android' : 'unknown',
         'createdAt': FieldValue.serverTimestamp(),
       });
     });

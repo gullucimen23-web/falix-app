@@ -32,6 +32,22 @@ class _PaywallPageState extends State<PaywallPage>
   String? _activeCoinProductId;
 
   List<ProductDetails> _products = [];
+  String? _storeError;
+  Set<String> _missingProductIds = const {};
+
+  String get _storeName => _iapService.storeName;
+
+  String get _storeUnavailableText {
+    if (_storeError != null && _storeError!.trim().isNotEmpty) {
+      return '$_storeName mağazası şu anda yüklenemedi. Detay: $_storeError';
+    }
+
+    if (_missingProductIds.isNotEmpty) {
+      return '$_storeName ürünleri bulunamadı. Eksik ürünler: ${_missingProductIds.join(', ')}';
+    }
+
+    return '$_storeName mağaza bağlantısı şu anda alınamadı.';
+  }
 
   @override
   void initState() {
@@ -74,6 +90,8 @@ class _PaywallPageState extends State<PaywallPage>
           _isStoreLoading = false;
           _isStoreAvailable = false;
           _products = [];
+          _storeError = 'Kullanıcı oturumu bulunamadı.';
+          _missingProductIds = const {};
         });
         return;
       }
@@ -129,8 +147,10 @@ class _PaywallPageState extends State<PaywallPage>
 
       if (!mounted) return;
       setState(() {
-        _isStoreAvailable = available;
+        _isStoreAvailable = available && products.isNotEmpty;
         _products = products;
+        _storeError = _iapService.lastStoreError;
+        _missingProductIds = _iapService.lastNotFoundProductIds;
         _isStoreLoading = false;
       });
     } catch (e) {
@@ -140,11 +160,45 @@ class _PaywallPageState extends State<PaywallPage>
         _isStoreLoading = false;
         _isStoreAvailable = false;
         _products = [];
+        _storeError = e.toString();
+        _missingProductIds = const {};
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Mağaza yüklenemedi: $e'),
+          content: Text('$_storeName mağazası yüklenemedi.'),
+        ),
+      );
+    }
+  }
+
+  Future<void> _reloadStore() async {
+    if (!mounted) return;
+
+    setState(() {
+      _isStoreLoading = true;
+      _storeError = null;
+      _missingProductIds = const {};
+      _products = [];
+    });
+
+    await _initStore();
+  }
+
+  Future<void> _restorePurchases() async {
+    try {
+      await _iapService.restorePurchases();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Önceki satın alımlar kontrol ediliyor...'),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Satın alımlar geri yüklenemedi: $e'),
         ),
       );
     }
@@ -682,7 +736,7 @@ class _PaywallPageState extends State<PaywallPage>
                   ? 'Premium ürünleri yükleniyor...'
                   : _isStoreAvailable
                       ? 'Premium ile kişisel hafıza, gizli mesajlar, reklamsız kullanım ve daha derin yorumlar açılır.'
-                      : 'Google Play mağazası şu anda alınamadı.',
+                      : _storeUnavailableText,
               style: const TextStyle(
                 color: Colors.white60,
                 fontSize: 12.5,
@@ -868,13 +922,41 @@ class _PaywallPageState extends State<PaywallPage>
               _isStoreLoading
                   ? 'Mağaza ürünleri yükleniyor...'
                   : _isStoreAvailable
-                      ? 'Satın alımlar doğrudan Google Play üzerinden güvenli şekilde gerçekleştirilir.'
-                      : 'Google Play mağaza bağlantısı şu anda alınamadı.',
+                      ? 'Satın alımlar doğrudan $_storeName üzerinden güvenli şekilde gerçekleştirilir.'
+                      : _storeUnavailableText,
               style: const TextStyle(
                 color: Colors.white54,
                 fontSize: 12.5,
                 height: 1.45,
               ),
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _isStoreLoading ? null : _reloadStore,
+                    icon: const Icon(Icons.refresh_rounded),
+                    label: const Text('Tekrar Dene'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.white,
+                      side: BorderSide(color: Colors.white.withOpacity(0.25)),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _isStoreLoading ? null : _restorePurchases,
+                    icon: const Icon(Icons.restore_rounded),
+                    label: const Text('Geri Yükle'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.white,
+                      side: BorderSide(color: Colors.white.withOpacity(0.25)),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -918,6 +1000,10 @@ class _PaywallPageState extends State<PaywallPage>
     return Scaffold(
       backgroundColor: const Color(0xFF090613),
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded),
+          onPressed: () => Navigator.of(context).maybePop(),
+        ),
         title: const Text(
           'Falix Premium',
           style: TextStyle(fontWeight: FontWeight.w800),
