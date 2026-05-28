@@ -25,6 +25,7 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
   String _relationshipStatus = 'belirsiz';
   bool _isLoading = true;
   bool _isSaving = false;
+  bool _isDeletingAccount = false;
 
   final List<DropdownMenuItem<String>> _relationshipItems = const [
     DropdownMenuItem(value: 'belirsiz', child: Text('Belirsiz')),
@@ -130,6 +131,64 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
     );
 
     // Navigator.pop(context);
+  }
+
+  Future<void> _confirmDeleteAccount() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1B1228),
+        title: const Text(
+          'Hesabı Sil',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800),
+        ),
+        content: const Text(
+          'Hesabını silersen profil bilgilerin, fal geçmişin ve uygulama içi verilerin kalıcı olarak silinir. Bu işlem geri alınamaz.',
+          style: TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Vazgeç'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text(
+              'Hesabımı Sil',
+              style: TextStyle(color: Colors.redAccent),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    setState(() {
+      _isDeletingAccount = true;
+    });
+
+    try {
+      await _userService.deleteCurrentUserAccount();
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Hesabın silindi.')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Hesap silinemedi: $e')),
+      );
+    } finally {
+      if (!mounted) return;
+
+      setState(() {
+        _isDeletingAccount = false;
+      });
+    }
   }
 
   Widget _fieldCard({required Widget child}) {
@@ -330,6 +389,36 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.white,
                         foregroundColor: Colors.black,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: _isDeletingAccount ? null : _confirmDeleteAccount,
+                      icon: _isDeletingAccount
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.delete_forever_rounded),
+                      label: Text(
+                        _isDeletingAccount
+                            ? 'Hesap siliniyor...'
+                            : 'Hesabımı Sil',
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.redAccent,
+                        side: BorderSide(
+                          color: Colors.redAccent.withOpacity(0.7),
+                        ),
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(18),

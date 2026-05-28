@@ -1,8 +1,12 @@
+import 'dart:convert';
 import 'dart:math' as math;
+import 'dart:io' show Platform;
 
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 import 'services/user_service.dart';
 import 'widgets/falix_logo.dart';
@@ -96,6 +100,68 @@ class _LoginPageState extends State<LoginPage>
       if (!mounted) return;
       setState(() {
         message = "Login hatası: $e";
+      });
+    } finally {
+      if (!mounted) return;
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+
+  String _generateNonce([int length = 32]) {
+    const charset =
+        '0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._';
+    final random = math.Random.secure();
+
+    return List.generate(
+      length,
+      (_) => charset[random.nextInt(charset.length)],
+    ).join();
+  }
+
+  String _sha256ofString(String input) {
+    final bytes = utf8.encode(input);
+    final digest = sha256.convert(bytes);
+    return digest.toString();
+  }
+
+  Future<void> signInWithApple() async {
+    if (!Platform.isIOS) return;
+
+    try {
+      setState(() {
+        isLoading = true;
+        message = "Apple ile giriş yapılıyor...";
+      });
+
+      final rawNonce = _generateNonce();
+      final nonce = _sha256ofString(rawNonce);
+
+      final appleCredential = await SignInWithApple.getAppleIDCredential(
+        scopes: const [
+          AppleIDAuthorizationScopes.email,
+          AppleIDAuthorizationScopes.fullName,
+        ],
+        nonce: nonce,
+      );
+
+      final oauthCredential = OAuthProvider("apple.com").credential(
+        idToken: appleCredential.identityToken,
+        rawNonce: rawNonce,
+      );
+
+      await FirebaseAuth.instance.signInWithCredential(oauthCredential);
+      await _userService.createUserIfNotExists();
+
+      if (!mounted) return;
+      setState(() {
+        message = "Hoş geldin ✨";
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        message = "Apple login hatası: $e";
       });
     } finally {
       if (!mounted) return;
@@ -245,6 +311,25 @@ class _LoginPageState extends State<LoginPage>
     );
   }
 
+  Widget _appleButton() {
+    if (!Platform.isIOS) return const SizedBox.shrink();
+
+    return Column(
+      children: [
+        const SizedBox(height: 10),
+        SizedBox(
+          width: double.infinity,
+          child: SignInWithAppleButton(
+            text: "Apple ile Devam Et",
+            onPressed: isLoading ? null : signInWithApple,
+            borderRadius: BorderRadius.circular(22),
+            height: 56,
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final height = MediaQuery.of(context).size.height;
@@ -374,6 +459,7 @@ class _LoginPageState extends State<LoginPage>
                                 ),
                                 const SizedBox(height: 18),
                                 _googleButton(),
+                                _appleButton(),
                               ],
                             ),
                           ),

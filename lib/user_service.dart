@@ -868,4 +868,57 @@ Future<void> saveUserProfileData({
     });
   }
 
+  Future<void> _deleteCollection(
+    CollectionReference<Map<String, dynamic>> collection,
+  ) async {
+    while (true) {
+      final snapshot = await collection.limit(300).get();
+      if (snapshot.docs.isEmpty) return;
+
+      final batch = _firestore.batch();
+      for (final doc in snapshot.docs) {
+        batch.delete(doc.reference);
+      }
+      await batch.commit();
+    }
+  }
+
+  Future<void> deleteCurrentUserAccount() async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      throw FirebaseAuthException(
+        code: 'no-current-user',
+        message: 'Oturum bulunamadı.',
+      );
+    }
+
+    final userRef = _firestore.collection('users').doc(user.uid);
+
+    final knownSubcollections = [
+      'readings',
+      'coin_history',
+      'premium_coin_history',
+      'human_orders',
+    ];
+
+    for (final collectionName in knownSubcollections) {
+      await _deleteCollection(userRef.collection(collectionName));
+    }
+
+    await userRef.delete();
+
+    try {
+      await user.delete();
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'requires-recent-login') {
+        throw FirebaseAuthException(
+          code: e.code,
+          message:
+              'Güvenlik nedeniyle hesabı silmeden önce çıkış yapıp tekrar giriş yapmalısın.',
+        );
+      }
+      rethrow;
+    }
+  }
+
 }

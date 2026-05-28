@@ -91,6 +91,10 @@ Future<void> saveUserProfileData({
         'lastDailyClaimDate': '',
         'dailyUsage': 0,
         'lastUsageDate': '',
+        'freeTarotCount': 0,
+        'freeCoffeeCount': 0,
+        'expertMessageCount': 0,
+        'adFreeCount': 0,
         'createdAt': FieldValue.serverTimestamp(),
       });
       return;
@@ -108,6 +112,10 @@ Future<void> saveUserProfileData({
     }
     if (!data.containsKey('dailyUsage')) updates['dailyUsage'] = 0;
     if (!data.containsKey('lastUsageDate')) updates['lastUsageDate'] = '';
+    if (!data.containsKey('freeTarotCount')) updates['freeTarotCount'] = 0;
+    if (!data.containsKey('freeCoffeeCount')) updates['freeCoffeeCount'] = 0;
+    if (!data.containsKey('expertMessageCount')) updates['expertMessageCount'] = 0;
+    if (!data.containsKey('adFreeCount')) updates['adFreeCount'] = 0;
     if (!data.containsKey('email')) updates['email'] = user.email;
 
     if (updates.isNotEmpty) {
@@ -617,6 +625,30 @@ Future<void> saveUserProfileData({
     });
   }
 
+  Future<void> consumeAdFreeCount() async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    final ref = _firestore.collection('users').doc(user.uid);
+    await _firestore.runTransaction((transaction) async {
+      final snapshot = await transaction.get(ref);
+      if (!snapshot.exists) return;
+
+      final data = snapshot.data() ?? {};
+      final current = (data['adFreeCount'] ?? 0) as int;
+      if (current <= 0) return;
+
+      transaction.set(
+        ref,
+        {
+          'adFreeCount': current - 1,
+          'updatedAt': FieldValue.serverTimestamp(),
+        },
+        SetOptions(merge: true),
+      );
+    });
+  }
+
   Future<Map<String, dynamic>> getSpinStatus() async {
     final user = _auth.currentUser;
     if (user == null) return {};
@@ -645,6 +677,7 @@ Future<void> saveUserProfileData({
       'freeTarotCount': data['freeTarotCount'] ?? 0,
       'freeCoffeeCount': data['freeCoffeeCount'] ?? 0,
       'expertMessageCount': data['expertMessageCount'] ?? 0,
+      'adFreeCount': data['adFreeCount'] ?? 0,
     };
   }
 
@@ -754,6 +787,7 @@ Future<void> saveUserProfileData({
       int freeTarotCount = (data['freeTarotCount'] ?? 0) as int;
       int freeCoffeeCount = (data['freeCoffeeCount'] ?? 0) as int;
       int expertMessageCount = (data['expertMessageCount'] ?? 0) as int;
+      int adFreeCount = (data['adFreeCount'] ?? 0) as int;
 
       switch (rewardType) {
         case 'coin':
@@ -771,6 +805,9 @@ Future<void> saveUserProfileData({
         case 'expertMessage':
           expertMessageCount += rewardValue;
           break;
+        case 'adFree':
+          adFreeCount += rewardValue;
+          break;
         case 'miss':
           break;
       }
@@ -783,6 +820,7 @@ Future<void> saveUserProfileData({
           'freeTarotCount': freeTarotCount,
           'freeCoffeeCount': freeCoffeeCount,
           'expertMessageCount': expertMessageCount,
+          'adFreeCount': adFreeCount,
           'updatedAt': FieldValue.serverTimestamp(),
         },
         SetOptions(merge: true),
@@ -828,6 +866,59 @@ Future<void> saveUserProfileData({
         });
       }
     });
+  }
+
+  Future<void> _deleteCollection(
+    CollectionReference<Map<String, dynamic>> collection,
+  ) async {
+    while (true) {
+      final snapshot = await collection.limit(300).get();
+      if (snapshot.docs.isEmpty) return;
+
+      final batch = _firestore.batch();
+      for (final doc in snapshot.docs) {
+        batch.delete(doc.reference);
+      }
+      await batch.commit();
+    }
+  }
+
+  Future<void> deleteCurrentUserAccount() async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      throw FirebaseAuthException(
+        code: 'no-current-user',
+        message: 'Oturum bulunamadı.',
+      );
+    }
+
+    final userRef = _firestore.collection('users').doc(user.uid);
+
+    final knownSubcollections = [
+      'readings',
+      'coin_history',
+      'premium_coin_history',
+      'human_orders',
+    ];
+
+    for (final collectionName in knownSubcollections) {
+      await _deleteCollection(userRef.collection(collectionName));
+    }
+
+    await userRef.delete();
+
+    try {
+      await user.delete();
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'requires-recent-login') {
+        throw FirebaseAuthException(
+          code: e.code,
+          message:
+              'Güvenlik nedeniyle hesabı silmeden önce çıkış yapıp tekrar giriş yapmalısın.',
+        );
+      }
+      rethrow;
+    }
   }
 
 }
