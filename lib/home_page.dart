@@ -57,14 +57,22 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   late final Animation<Offset> _cardsSlide;
   late final Animation<double> _resultFade;
 
-  static const String _testRewardedAdUnitId =
-      'ca-app-pub-3940256099942544/5224354917';
-
-  static const String _realRewardedAdUnitId =
+  static const String _androidRewardedAdUnitId =
       'ca-app-pub-6519845131494268/8544916065';
 
+  static const String _iosRewardedAdUnitId =
+      'ca-app-pub-6519845131494268/9042389292';
+
   String get rewardedAdUnitId {
-    return kReleaseMode ? _realRewardedAdUnitId : _testRewardedAdUnitId;
+    if (kReleaseMode) {
+      return Platform.isIOS
+          ? _iosRewardedAdUnitId
+          : _androidRewardedAdUnitId;
+    }
+
+    return Platform.isIOS
+        ? 'ca-app-pub-3940256099942544/1712485313'
+        : 'ca-app-pub-3940256099942544/5224354917';
   }
 
   String get adModeText {
