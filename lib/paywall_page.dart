@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import 'services/live_analytics_service.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'iap_service.dart';
 
@@ -36,6 +37,20 @@ class _PaywallPageState extends State<PaywallPage>
   Set<String> _missingProductIds = const {};
 
   String get _storeName => _iapService.storeName;
+
+  static const String _privacyPolicyUrl = 'https://falix.app/privacy';
+  static const String _termsOfUseUrl =
+      'https://www.apple.com/legal/internet-services/itunes/dev/stdeula/';
+
+  Future<void> _openUrl(String url) async {
+    final uri = Uri.parse(url);
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Link açılamadı: $url')),
+      );
+    }
+  }
 
   String get _storeUnavailableText {
     if (_storeError != null && _storeError!.trim().isNotEmpty) {
@@ -715,7 +730,9 @@ class _PaywallPageState extends State<PaywallPage>
                       ? 'İşleniyor...'
                       : canBuyPremium
                           ? 'Premium’u Aç'
-                          : 'Premium Ürün Yükleniyor',
+                          : _isStoreLoading
+                              ? 'Mağaza Kontrol Ediliyor'
+                              : 'Premium Şu Anda Kullanılamıyor',
                 ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.white,
@@ -843,7 +860,11 @@ class _PaywallPageState extends State<PaywallPage>
                       )
                     else
                       Text(
-                        canBuy ? 'Satın Al' : 'Yükleniyor',
+                        canBuy
+                            ? 'Satın Al'
+                            : _isStoreLoading
+                                ? 'Kontrol ediliyor'
+                                : 'Kullanılamıyor',
                         style: TextStyle(
                           color: canBuy ? accent : Colors.white38,
                           fontWeight: FontWeight.w700,
@@ -966,29 +987,52 @@ class _PaywallPageState extends State<PaywallPage>
 
   Widget _buildBottomInfo() {
     return _glassCard(
-      child: const Column(
+      child: Column(
         children: [
-          Text(
-            'Premium Neden Satın Alınır?',
+          const Text(
+            'Premium ve Abonelik Bilgileri',
             style: TextStyle(
               color: Colors.white,
               fontWeight: FontWeight.w800,
               fontSize: 16,
             ),
           ),
-          SizedBox(height: 10),
-          Text(
+          const SizedBox(height: 10),
+          const Text(
             '• Falix önceki fallarını hatırlar\n'
             '• Gizli ilişki ve kader mesajları açılır\n'
             '• Daha uzun, daha kişisel yorumlar gelir\n'
             '• Reklamsız ve daha akıcı mistik deneyim\n'
-            '• Uzman yorumlarına Premium Coin ile erişim',
+            '• Uzman yorumlarına Premium Coin ile erişim\n\n'
+            'Abonelikler otomatik yenilenir. İptal edilmediği sürece mevcut dönem bitmeden önce yenileme yapılır. '
+            'Abonelik yönetimi ve iptal işlemleri App Store hesap ayarlarından yapılır. '
+            'Satın alımlar App Store üzerinden güvenli şekilde işlenir.',
             textAlign: TextAlign.center,
             style: TextStyle(
               color: Colors.white70,
               height: 1.6,
               fontSize: 13.5,
             ),
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 10,
+            runSpacing: 8,
+            children: [
+              TextButton(
+                onPressed: () => _openUrl(_termsOfUseUrl),
+                child: const Text('Kullanım Koşulları'),
+              ),
+              TextButton(
+                onPressed: () => _openUrl(_privacyPolicyUrl),
+                child: const Text('Gizlilik Politikası'),
+              ),
+              TextButton(
+                onPressed: _restorePurchases,
+                child: const Text('Satın Alımları Geri Yükle'),
+              ),
+            ],
           ),
         ],
       ),

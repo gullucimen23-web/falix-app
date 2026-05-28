@@ -321,7 +321,10 @@ class _LoginPageState extends State<LoginPage>
           width: double.infinity,
           child: SignInWithAppleButton(
             text: "Apple ile Devam Et",
-            onPressed: isLoading ? null : signInWithApple,
+            onPressed: () async {
+              if (isLoading) return;
+              await signInWithApple();
+            },
             borderRadius: BorderRadius.circular(22),
             height: 56,
           ),
