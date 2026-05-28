@@ -2,11 +2,11 @@ name: falix_app
 description: "A new Flutter project."
 publish_to: 'none'
 
-version: 1.0.16+38
 
+
+version: 1.0.16+39
 environment:
   sdk: ">=3.0.0 <4.0.0"
-
 dependencies:
   flutter:
     sdk: flutter
