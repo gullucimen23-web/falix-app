@@ -38,9 +38,11 @@ class _PaywallPageState extends State<PaywallPage>
 
   String get _storeName => _iapService.storeName;
 
-  static const String _privacyPolicyUrl = 'https://falix.app/privacy';
-  static const String _termsOfUseUrl =
-      'https://www.apple.com/legal/internet-services/itunes/dev/stdeula/';
+static const String _privacyPolicyUrl =
+    'https://gullucimen23-web.github.io/gullucimen23.github.io/privacy.html';
+
+static const String _termsOfUseUrl =
+    'https://gullucimen23-web.github.io/gullucimen23.github.io/terms.html';
 
   Future<void> _openUrl(String url) async {
     final uri = Uri.parse(url);
@@ -1046,7 +1048,7 @@ class _PaywallPageState extends State<PaywallPage>
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded),
-          onPressed: () => Navigator.of(context).maybePop(),
+          onPressed: () => Navigator.of(context).pop(),
         ),
         title: const Text(
           'Falix Premium',
