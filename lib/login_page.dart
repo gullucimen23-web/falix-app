@@ -147,9 +147,10 @@ class _LoginPageState extends State<LoginPage>
       );
 
       final oauthCredential = OAuthProvider("apple.com").credential(
-        idToken: appleCredential.identityToken,
-        rawNonce: rawNonce,
-      );
+  idToken: appleCredential.identityToken,
+  accessToken: appleCredential.authorizationCode,
+  rawNonce: rawNonce,
+);
 
       await FirebaseAuth.instance.signInWithCredential(oauthCredential);
       await _userService.createUserIfNotExists();
