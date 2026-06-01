@@ -38,11 +38,11 @@ class _PaywallPageState extends State<PaywallPage>
 
   String get _storeName => _iapService.storeName;
 
-static const String _privacyPolicyUrl =
-    'https://gullucimen23-web.github.io/gullucimen23.github.io/privacy.html';
+  static const String _privacyPolicyUrl =
+      'https://gullucimen23-web.github.io/gullucimen23.github.io/privacy.html';
 
-static const String _termsOfUseUrl =
-    'https://gullucimen23-web.github.io/gullucimen23.github.io/terms.html';
+  static const String _termsOfUseUrl =
+      'https://gullucimen23-web.github.io/gullucimen23.github.io/terms.html';
 
   Future<void> _openUrl(String url) async {
     final uri = Uri.parse(url);
@@ -60,10 +60,10 @@ static const String _termsOfUseUrl =
     }
 
     if (_missingProductIds.isNotEmpty) {
-      return '$_storeName ürünleri bulunamadı. Eksik ürünler: ${_missingProductIds.join(', ')}';
+      return 'Premium ve coin paketleri şu anda App Store tarafından hazırlanıyor. Lütfen daha sonra tekrar deneyin.';
     }
 
-    return '$_storeName mağaza bağlantısı şu anda alınamadı.';
+    return 'Premium ve coin paketleri şu anda yüklenemedi. Lütfen daha sonra tekrar deneyin.';
   }
 
   @override
@@ -242,9 +242,9 @@ static const String _termsOfUseUrl =
   String _fallbackSubscriptionPrice(String plan) {
     switch (plan) {
       case 'monthly':
-        return 'Aylık Plan';
+        return 'Fiyat App Store’dan yükleniyor';
       case 'yearly':
-        return 'Yıllık Plan';
+        return 'Fiyat App Store’dan yükleniyor';
       default:
         return '';
     }
@@ -700,7 +700,7 @@ static const String _termsOfUseUrl =
               title: 'Aylık Premium',
               price: monthlyPrice,
               subtitle:
-                  'Gizli mesajları ve kişisel yorumları hemen açmak isteyenler için.',
+                  'Süre: 1 ay. Abonelik App Store üzerinden otomatik yenilenir.',
               badge: 'Esnek',
               highlighted: false,
             ),
@@ -710,7 +710,7 @@ static const String _termsOfUseUrl =
               title: 'Yıllık Premium',
               price: yearlyPrice,
               subtitle:
-                  'En iyi değer. Falix seni zamanla daha iyi tanır ve yorumların derinleşir.',
+                  'Süre: 1 yıl. Abonelik App Store üzerinden otomatik yenilenir.',
               badge: 'En Popüler',
               highlighted: true,
             ),
@@ -1001,14 +1001,12 @@ static const String _termsOfUseUrl =
           ),
           const SizedBox(height: 10),
           const Text(
-            '• Falix önceki fallarını hatırlar\n'
-            '• Gizli ilişki ve kader mesajları açılır\n'
-            '• Daha uzun, daha kişisel yorumlar gelir\n'
-            '• Reklamsız ve daha akıcı mistik deneyim\n'
-            '• Uzman yorumlarına Premium Coin ile erişim\n\n'
-            'Abonelikler otomatik yenilenir. İptal edilmediği sürece mevcut dönem bitmeden önce yenileme yapılır. '
-            'Abonelik yönetimi ve iptal işlemleri App Store hesap ayarlarından yapılır. '
-            'Satın alımlar App Store üzerinden güvenli şekilde işlenir.',
+            'Falix Premium Monthly: 1 aylık otomatik yenilenen abonelik.\n'
+            'Falix Premium Yearly: 1 yıllık otomatik yenilenen abonelik.\n\n'
+            'Fiyatlar satın alma işleminden önce App Store ödeme ekranında gösterilir. '
+            'Abonelik iptal edilmediği sürece otomatik yenilenir. '
+            'Abonelik yönetimi ve iptal işlemleri App Store hesap ayarlarından yapılır.\n\n'
+            'Satın almadan önce Gizlilik Politikası ve Kullanım Koşulları linklerine erişebilirsiniz.',
             textAlign: TextAlign.center,
             style: TextStyle(
               color: Colors.white70,
