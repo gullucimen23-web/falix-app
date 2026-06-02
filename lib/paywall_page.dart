@@ -56,7 +56,7 @@ class _PaywallPageState extends State<PaywallPage>
 
   String get _storeUnavailableText {
     if (_storeError != null && _storeError!.trim().isNotEmpty) {
-      return '$_storeName mağazası şu anda yüklenemedi. Detay: $_storeError';
+      return 'Premium ve coin paketleri şu anda yüklenemedi. Lütfen daha sonra tekrar deneyin.';
     }
 
     if (_missingProductIds.isNotEmpty) {
@@ -183,7 +183,7 @@ class _PaywallPageState extends State<PaywallPage>
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('$_storeName mağazası yüklenemedi.'),
+          content: Text('Premium ve coin paketleri şu anda yüklenemedi.'),
         ),
       );
     }
@@ -242,9 +242,9 @@ class _PaywallPageState extends State<PaywallPage>
   String _fallbackSubscriptionPrice(String plan) {
     switch (plan) {
       case 'monthly':
-        return 'Fiyat App Store’dan yükleniyor';
+        return '₺149,99 / ay';
       case 'yearly':
-        return 'Fiyat App Store’dan yükleniyor';
+        return '₺999,99 / yıl';
       default:
         return '';
     }
@@ -257,7 +257,7 @@ class _PaywallPageState extends State<PaywallPage>
     if (product == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Ürün mağazada bulunamadı.'),
+          content: Text('Bu paket şu anda kullanılamıyor. Lütfen daha sonra tekrar deneyin.'),
         ),
       );
       return;
@@ -441,7 +441,7 @@ class _PaywallPageState extends State<PaywallPage>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Falix Seni Zamanla Tanır ✨',
+                          'AI Destekli Kişisel Analiz ✨',
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 26,
@@ -451,7 +451,7 @@ class _PaywallPageState extends State<PaywallPage>
                         ),
                         SizedBox(height: 4),
                         Text(
-                          "Önceki fallarını hatırlayan, ilişki enerjini takip eden ve sana daha kişisel yorumlar açan özel deneyim.",
+                          "Kahve fincanı fotoğraf analizi, tarot yorumları ve uzman desteğini bir araya getiren kişiselleştirilmiş deneyim.",
                           style: TextStyle(
                             color: Colors.white70,
                             height: 1.4,
@@ -469,15 +469,15 @@ class _PaywallPageState extends State<PaywallPage>
                 children: const [
                   _HeroChip(
                     icon: Icons.all_inclusive_rounded,
-                    label: 'Kişisel Hafıza',
+                    label: 'AI Analiz',
                   ),
                   _HeroChip(
                     icon: Icons.block_rounded,
-                    label: 'Gizli Mesajlar',
+                    label: 'Uzman Desteği',
                   ),
                   _HeroChip(
                     icon: Icons.auto_awesome_rounded,
-                    label: 'Derin Yorum',
+                    label: 'Fotoğraf Analizi',
                   ),
                 ],
               ),
@@ -657,7 +657,7 @@ class _PaywallPageState extends State<PaywallPage>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Premium’u Aç ve Falix’i Kişiselleştir',
+              'AI Analiz ve Uzman Desteğini Aç',
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 20,
@@ -683,7 +683,7 @@ class _PaywallPageState extends State<PaywallPage>
                   SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      'Premium ile Falix önceki fallarını hatırlar, gizli mesajları açar, daha uzun ilişki ve kader yorumları üretir.',
+                      'Premium ile AI destekli fotoğraf analizleri, kişiselleştirilmiş yorumlar, uzman desteği ve reklamsız deneyim açılır.',
                       style: TextStyle(
                         color: Colors.white70,
                         height: 1.4,
@@ -917,7 +917,7 @@ class _PaywallPageState extends State<PaywallPage>
               title: '250 Premium Coin',
               subtitle:
                   'İlk uzman mesajı veya derin yorum denemesi için ideal.',
-              fallbackPrice: 'Paket',
+              fallbackPrice: '₺49,99',
               accent: const Color(0xFFFFC94D),
             ),
             const SizedBox(height: 12),
@@ -927,7 +927,7 @@ class _PaywallPageState extends State<PaywallPage>
               title: '2000 Premium Coin',
               subtitle:
                   'İlişki, kader ve gerçek uzman yorumları için en dengeli seçim.',
-              fallbackPrice: 'Paket',
+              fallbackPrice: '₺199,99',
               accent: const Color(0xFFA98BFF),
             ),
             const SizedBox(height: 12),
@@ -937,7 +937,7 @@ class _PaywallPageState extends State<PaywallPage>
               title: '5000 Premium Coin',
               subtitle:
                   'Sık uzman desteği ve yoğun derin yorum kullanımı için güçlü bakiye.',
-              fallbackPrice: 'Paket',
+              fallbackPrice: '₺499,99',
               accent: const Color(0xFFFA9BFF),
             ),
             const SizedBox(height: 10),
@@ -1001,10 +1001,12 @@ class _PaywallPageState extends State<PaywallPage>
           ),
           const SizedBox(height: 10),
           const Text(
-            'Falix Premium Monthly: 1 aylık otomatik yenilenen abonelik.\n'
-            'Falix Premium Yearly: 1 yıllık otomatik yenilenen abonelik.\n\n'
-            'Fiyatlar satın alma işleminden önce App Store ödeme ekranında gösterilir. '
-            'Abonelik iptal edilmediği sürece otomatik yenilenir. '
+            'Falix Premium Monthly: ₺149,99 / ay - 1 aylık otomatik yenilenen abonelik.\n'
+            'Falix Premium Yearly: ₺999,99 / yıl - 1 yıllık otomatik yenilenen abonelik.\n\n'
+            '250 Premium Coin: ₺49,99\n'
+            '2000 Premium Coin: ₺199,99\n'
+            '5000 Premium Coin: ₺499,99\n\n'
+            'Abonelikler iptal edilmediği sürece otomatik yenilenir. '
             'Abonelik yönetimi ve iptal işlemleri App Store hesap ayarlarından yapılır.\n\n'
             'Satın almadan önce Gizlilik Politikası ve Kullanım Koşulları linklerine erişebilirsiniz.',
             textAlign: TextAlign.center,
